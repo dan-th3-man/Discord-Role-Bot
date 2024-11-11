@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"target": "ES6",
+		"module": "CommonJS",
+		"esModuleInterop": true,
+		"outDir": "./dist",
+		"rootDir": "./src",
+		"strict": true,
+		"moduleResolution": "node",
+		"types": ["node", "express"]
+	},
+	"include": ["src/**/*"]
+}
