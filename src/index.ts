@@ -52,8 +52,8 @@ app.post("/VerifyAndRewardDiscordRole", async (req: Request, res: Response): Pro
     }
 
     // Cast the validated wallet address to the correct type
-    await main(walletAddress as `0x${string}`);
-    res.status(200).json({ message: "Role check completed successfully" });
+    const result = await main(walletAddress as `0x${string}`);
+    res.status(200).json(result);
   } catch (error) {
     console.error("Error processing request:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -66,28 +66,52 @@ app.listen(process.env.PORT || 3000, () => {
 
 
 // MAIN FUNCTION
-async function main(walletAddress: `0x${string}`) {
-
+async function main(walletAddress: `0x${string}`): Promise<{ message: string; status: string }> {
   const discordUser = await getDiscordUser(walletAddress);
 
-  if (discordUser) {
-    for (const { role, badgeIdRequired } of roleAccess) {
-      const hasRole = await checkUserRole(discordUser, role);
-      if (hasRole) {
-        console.log(`${discordUser} has ${role} role.`);
+  if (!discordUser) {
+    return { 
+      message: "No Discord account linked to this wallet", 
+      status: "error" 
+    };
+  }
+
+  let rolesAdded: string[] = [];
+  let rolesAlreadyHad: string[] = [];
+  let rolesNotEligible: string[] = [];
+
+  for (const { role, badgeIdRequired } of roleAccess) {
+    const hasRole = await checkUserRole(discordUser, role);
+    if (hasRole) {
+      rolesAlreadyHad.push(role);
+    } else {
+      const hasBadge = await checkUserBadgeBool(walletAddress, badgeIdRequired);
+      if (hasBadge) {
+        await assignRoleToUser(discordUser, role);
+        rolesAdded.push(role);
       } else {
-        const hasBadge = await checkUserBadgeBool(walletAddress, badgeIdRequired);
-        if (hasBadge) {
-          await assignRoleToUser(discordUser, role);
-          console.log(`User has been assigned the ${role} role.`);
-        } else {
-          console.log(`User ${discordUser} does not have the badge or role`);
-        }
+        rolesNotEligible.push(role);
       }
     }
-  } else {
-    console.log("User not found or Discord ID not linked.");
   }
+
+  // Build response message
+  const messageParts: string[] = [];
+  
+  if (rolesAdded.length > 0) {
+    messageParts.push(`Added: ${rolesAdded.join(", ")}`);
+  }
+  if (rolesAlreadyHad.length > 0) {
+    messageParts.push(`Already has: ${rolesAlreadyHad.join(", ")}`);
+  }
+  if (rolesNotEligible.length > 0) {
+    messageParts.push(`Not eligible for: ${rolesNotEligible.join(", ")}`);
+  }
+
+  return { 
+    message: messageParts.length > 0 ? messageParts.join(". ") : "No role changes needed",
+    status: rolesAdded.length > 0 ? "success" : "info"
+  };
 }
 
 
