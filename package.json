@@ -5,23 +5,28 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@privy-io/server-auth": "^1.16.1",
-    "axios": "^1.7.7",
-    "body-parser": "^1.20.3",
-    "discord.js": "^14.16.3",
-    "express": "^4.21.1",
-    "node-fetch": "^3.3.1",
-    "typescript": "^5.6.3"
+    "@privy-io/server-auth": "1.16.1",
+    "axios": "1.7.7",
+    "body-parser": "1.20.3",
+    "discord.js": "14.16.3",
+    "express": "4.21.1",
+    "node-fetch": "3.3.1",
+    "typescript": "5.6.3",
+    "viem": "2.21.44",
+    "redaxios": "0.5.1",
+    "dotenv": "16.3.1"
   },
   "devDependencies": {
-    "@types/body-parser": "^1.19.5",
-    "@types/express": "^5.0.0",
-    "@types/node": "^20.10.0",
-    "tsx": "^4.7.1"
+    "@types/body-parser": "1.19.5",
+    "@types/express": "5.0.0",
+    "@types/node": "20.10.0",
+    "tsx": "4.7.1"
   }
 }

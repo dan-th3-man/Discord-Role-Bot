@@ -1,87 +1,79 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express, { Request, Response } from "express";
 import { Client, GatewayIntentBits } from "discord.js";
 import { PrivyClient } from "@privy-io/server-auth";
-import axios from "axios";
+import type { Address } from "viem";
+import { gql, request } from "graphql-request";
 
-// Environment Variables
-const botToken = process.env["DISCORD_TOKEN"];
-const apiKey = process.env["OPENFORMAT_API_KEY"];
-const privyAppSecret = process.env["PRIVY_APP_SECRET"];
-const privyAppId = process.env["PRIVY_APP_ID"];
 
 // Role Data - Currently just ambassador badge
 const roleAccess = [
   {
     role: "ambassador",
-    badgeIdRequired: "0x10e9267ad0637584ab1a581d60336a1e7144fb5a",
+    badgeIdRequired: "0xe6e976dd96bca7da4f1e2d2bb1ba11e2b500d85a",
   },
 ];
 
 // Set up Privy client
-if (!privyAppId || !privyAppSecret) {
-  throw new Error(
-    "PRIVY_APP_ID or PRIVY_APP_SECRET environment variable is not set",
-  );
+if (!process.env.PRIVY_APP_ID || !process.env.PRIVY_APP_SECRET) {
+  throw new Error("Missing Privy environment variables");
 }
 
-const privyClient = new PrivyClient(privyAppId, privyAppSecret);
+const privyClient = new PrivyClient(
+  process.env.PRIVY_APP_ID as string,
+  process.env.PRIVY_APP_SECRET as string
+);
 
-//Setup Discord client
 
-const client = new Client({
+// Set up Discord client
+const discordClient = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 });
 
-client.once("ready", () => {
-  console.log(`Logged in as ${client.user?.tag}!`);
+discordClient.once("ready", () => {
+  console.log(`Logged in as ${discordClient.user?.tag}!`);
 });
 
-client.login(botToken);
+discordClient.login(process.env.DISCORD_BOT_TOKEN as string);
 
-// Handle webhook logic
+console.log(main("0x1f9174021deDc2CDF8dDA3df78668F6Dc09253c4"));
+
+// Set up API endpoint
 const app = express();
 app.use(express.json());
 
-app.post("/webhook", async (req: Request, res: Response): Promise<void> => {
-  // Verify Webhook
-  /*  const signature = req.headers['x-openformat-signature'] as string;
+app.post("/VerifyAndRewardDiscordRole", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { walletAddress, chain } = req.body;
 
-    res.json({
-        "challenge": signature
-    });
-    */
-
-   try {
-      const { event, payload } = req.body;
-
-      // Ensure it's the correct event type
-      if (event !== "transaction") {
-        res.status(400).json({ error: "Invalid event type" });
-        return
-      }
-
-      const walletAddress = payload.to; // Extract wallet address from 'to' field
-      console.log(walletAddress);
-      if (!walletAddress) {
-        res.status(400).json({ error: "Wallet address not provided" });
-        return
-      }
-
-      // Call main function with walletAddress
-      await main(walletAddress);
-      res.status(200).json({ message: "Role check triggered" });
-    } catch (error) {
-      console.error("Error handling webhook:", error);
-      res.status(500).json({ error: "Internal server error" });
+    // Validate input
+    if (!walletAddress) {
+      res.status(400).json({ error: "Wallet address not provided" });
+      return;
     }
-  });
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
+    if (!chain) {
+      res.status(400).json({ error: "Chain not provided" });
+      return;
+    }
+
+    // Call main function with walletAddress
+    await main(walletAddress);
+    res.status(200).json({ message: "Role check completed successfully" });
+  } catch (error) {
+    console.error("Error processing request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Server is running on port ${process.env.PORT || 3000}`);
 });
 
 
-async function main(walletAddress: string) {
+// MAIN FUNCTION
+async function main(walletAddress: `0x${string}`) {
 
   const discordUser = await getDiscordUser(walletAddress);
 
@@ -91,7 +83,7 @@ async function main(walletAddress: string) {
       if (hasRole) {
         console.log(`${discordUser} has ${role} role.`);
       } else {
-        const hasBadge = await checkUserBadge(walletAddress, badgeIdRequired);
+        const hasBadge = await checkUserBadgeBool(walletAddress, badgeIdRequired);
         if (hasBadge) {
           await assignRoleToUser(discordUser, role);
           console.log(`User has been assigned the ${role} role.`);
@@ -107,14 +99,13 @@ async function main(walletAddress: string) {
 
 
 // GET DISCORD USERNAME FROM WALLET ADDRESS USING PRIVY
-async function getDiscordUser(walletAddress: string): Promise<string | null> {
+async function getDiscordUser(walletAddress: Address): Promise<string | null> {
   try {
     // Return Privy user object
     const user = await privyClient.getUserByWalletAddress(walletAddress);
 
-    if (user && user.discord) {
-      const discordName = user.discord.username;
-      return discordName;
+    if (user?.discord?.username) {
+      return user.discord.username;
     } else {
       console.log("User not found or Discord ID not linked.");
       return null;
@@ -138,7 +129,7 @@ async function checkUserRole(
       throw new Error("GUILD_ID environment variable is not set");
     }
 
-    const guild = await client.guilds.fetch(guildId);
+    const guild = await discordClient.guilds.fetch(guildId);
     if (!guild) throw new Error("Guild not found");
 
     const usernameWithoutDiscriminator = discordUser.split("#")[0];
@@ -161,42 +152,99 @@ async function checkUserRole(
 
 
 // CHECK WHETHER USER HAS BADGE
-async function checkUserBadge(
+async function checkUserBadge(walletAddress: string): Promise<any> {
+  if (!process.env.OPENFORMAT_SUBGRAPH_URL) {
+    console.log("Missing OPENFORMAT_SUBGRAPH_URL");
+    return false;
+  }
+
+  const checkBadges = gql`
+    query CheckBadges($walletAddress: ID!) {
+      users(where: {id: $walletAddress}) {
+        id
+        collectedBadges {
+          badge {
+            id
+            name
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    console.log('Querying subgraph URL:', process.env.OPENFORMAT_SUBGRAPH_URL);
+    console.log('Checking wallet:', walletAddress);
+    
+    const response = await request(
+      process.env.OPENFORMAT_SUBGRAPH_URL,
+      checkBadges,
+      {
+        walletAddress: walletAddress.toLowerCase() // Add toLowerCase() as GraphQL is case-sensitive
+      }
+    );
+    
+    return response;
+    
+  } catch (error: any) {
+    console.error("Error checking user badge:", error);
+    // Log more details about the error
+    if (error.response) {
+      console.log('Error response:', error.response);
+    }
+    return error;
+  }
+}
+
+// CHECK WHETHER USER HAS BADGE
+async function checkUserBadgeBool(
   walletAddress: string,
   badgeId: string,
 ): Promise<boolean> {
-  const dappId = process.env["DAPP_ID"];
 
-  if (!dappId) {
-    throw new Error("DAPP_ID environment variable is not set");
+  if (!process.env.OPENFORMAT_SUBGRAPH_URL) {
+    return false;
   }
 
-  const queryParams = {
-    app_id: dappId.toLowerCase(),
-    user_id: walletAddress.toLowerCase(),
-    chain: "arbitrum-sepolia",
-  };
+  
+  const checkBadges = gql`
+    query CheckBadges($walletAddress: ID!) {
+      users(where: {id: $walletAddress}) {
+        collectedBadges {
+          badge {
+            id
+            name
+          }
+        }
+      }
+    }
+  `;
 
-  const axiosConfig = {
-    method: "GET",
-    url: "https://api.openformat.tech/v1/profile",
-    headers: {
-      "X-API-KEY": apiKey,
-      "Content-Type": "application/json",
-    },
-    params: queryParams,
-  };
+  try {
+    const response = await request<BadgeResponse>(
+      process.env.OPENFORMAT_SUBGRAPH_URL,
+      checkBadges,
+      {
+        walletAddress: walletAddress.toLowerCase(),
+      }
+    );
+  console.log(response);
+    
+    if (!response.users || response.users.length === 0) {
+      console.log(`No user found for wallet address: ${walletAddress}`);
+      return false;
+    }
 
-  const apiResponse = await axios(axiosConfig);
-  const hasBadge = apiResponse.data?.collected_badges.length
-    ? apiResponse.data.collected_badges.some(
-        (badge: { id: string }) => badge.id === badgeId,
-      )
-    : false;
+    const hasBadge = response.users[0]?.collectedBadges.some(
+      (collected: { badge: { id: string } }) => collected.badge.id === badgeId.toLowerCase()
+    );
 
-  return hasBadge;
+    return hasBadge || false;
+  } catch (error) {
+    console.error("Error checking user badge:", error);
+    return false;
+  }
 }
-
 
 // ASSIGN A ROLE TO A USER
 async function assignRoleToUser(discordUser: string, roleName: string): Promise<void> {
@@ -206,7 +254,7 @@ async function assignRoleToUser(discordUser: string, roleName: string): Promise<
         throw new Error("GUILD_ID environment variable is not set");
       }
 
-      const guild = await client.guilds.fetch(guildId);
+      const guild = await discordClient.guilds.fetch(guildId);
       if (!guild) throw new Error("Guild not found");
 
       // Fetch the role by name
@@ -226,3 +274,14 @@ async function assignRoleToUser(discordUser: string, roleName: string): Promise<
       console.error(`Failed to assign role "${roleName}" to user ${discordUser}:`, error);
     }
   }
+
+interface BadgeResponse {
+  users: {
+    collectedBadges: {
+      badge: {
+        id: string;
+        name: string;
+      };
+    }[];
+  }[];
+}
