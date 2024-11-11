@@ -47,16 +47,15 @@ app.post("/VerifyAndRewardDiscordRole", async (req: Request, res: Response): Pro
 
     // Validate input format
     if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
-      res.status(400).json({ error: "Invalid wallet address format" });
+      res.status(400).json({ message: "Invalid wallet address format" });
       return;
     }
 
-    // Cast the validated wallet address to the correct type
     const result = await main(walletAddress as `0x${string}`);
-    res.status(200).json(result);
+    res.status(200).json({ message: result.message });
   } catch (error) {
     console.error("Error processing request:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -66,13 +65,12 @@ app.listen(process.env.PORT || 3000, () => {
 
 
 // MAIN FUNCTION
-async function main(walletAddress: `0x${string}`): Promise<{ message: string; status: string }> {
+async function main(walletAddress: `0x${string}`): Promise<{ message: string }> {
   const discordUser = await getDiscordUser(walletAddress);
 
   if (!discordUser) {
     return { 
       message: "No Discord account linked to this wallet", 
-      status: "error" 
     };
   }
 
@@ -110,7 +108,6 @@ async function main(walletAddress: `0x${string}`): Promise<{ message: string; st
 
   return { 
     message: messageParts.length > 0 ? messageParts.join(". ") : "No role changes needed",
-    status: rolesAdded.length > 0 ? "success" : "info"
   };
 }
 
