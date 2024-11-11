@@ -37,29 +37,22 @@ discordClient.once("ready", () => {
 
 discordClient.login(process.env.DISCORD_BOT_TOKEN as string);
 
-console.log(main("0x1f9174021deDc2CDF8dDA3df78668F6Dc09253c4"));
-
 // Set up API endpoint
 const app = express();
 app.use(express.json());
 
 app.post("/VerifyAndRewardDiscordRole", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { walletAddress, chain } = req.body;
+    const { walletAddress } = req.body;
 
-    // Validate input
-    if (!walletAddress) {
-      res.status(400).json({ error: "Wallet address not provided" });
+    // Validate input format
+    if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+      res.status(400).json({ error: "Invalid wallet address format" });
       return;
     }
 
-    if (!chain) {
-      res.status(400).json({ error: "Chain not provided" });
-      return;
-    }
-
-    // Call main function with walletAddress
-    await main(walletAddress);
+    // Cast the validated wallet address to the correct type
+    await main(walletAddress as `0x${string}`);
     res.status(200).json({ message: "Role check completed successfully" });
   } catch (error) {
     console.error("Error processing request:", error);
@@ -150,51 +143,6 @@ async function checkUserRole(
   }
 }
 
-
-// CHECK WHETHER USER HAS BADGE
-async function checkUserBadge(walletAddress: string): Promise<any> {
-  if (!process.env.OPENFORMAT_SUBGRAPH_URL) {
-    console.log("Missing OPENFORMAT_SUBGRAPH_URL");
-    return false;
-  }
-
-  const checkBadges = gql`
-    query CheckBadges($walletAddress: ID!) {
-      users(where: {id: $walletAddress}) {
-        id
-        collectedBadges {
-          badge {
-            id
-            name
-          }
-        }
-      }
-    }
-  `;
-
-  try {
-    console.log('Querying subgraph URL:', process.env.OPENFORMAT_SUBGRAPH_URL);
-    console.log('Checking wallet:', walletAddress);
-    
-    const response = await request(
-      process.env.OPENFORMAT_SUBGRAPH_URL,
-      checkBadges,
-      {
-        walletAddress: walletAddress.toLowerCase() // Add toLowerCase() as GraphQL is case-sensitive
-      }
-    );
-    
-    return response;
-    
-  } catch (error: any) {
-    console.error("Error checking user badge:", error);
-    // Log more details about the error
-    if (error.response) {
-      console.log('Error response:', error.response);
-    }
-    return error;
-  }
-}
 
 // CHECK WHETHER USER HAS BADGE
 async function checkUserBadgeBool(
