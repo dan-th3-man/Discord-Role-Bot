@@ -30,8 +30,8 @@ PRIVY_APP_ID=your_privy_app_id
 PRIVY_APP_SECRET=your_privy_secret
 DISCORD_BOT_TOKEN=your_discord_bot_token
 GUILD_ID=your_discord_server_id
-OPENFORMAT_SUBGRAPH_URL=your_subgraph_url
-PORT=3000
+OPENFORMAT_SUBGRAPH_URL=https://api.studio.thegraph.com/query/82634/open-format-aurora/version/latest //For Aurora Mainnet
+
 ```
 Install dependencies:
 
@@ -49,34 +49,46 @@ npm start
 
 Send a POST request to /VerifyAndRewardDiscordRole:
 
+```
 {
   "walletAddress": "0x1234..."
 }
+```
 
 Response examples:
 
 ```
 {
-  "message": "Added Discord Role(s): ambassador"
+  "status": 200,
+  "data": {
+    "message": "Added Discord Role(s): ambassador"
+  }
 }
 ```
 
 ```
 {
-  "message": "No Discord account linked to this wallet"
+  "status": 200,
+  "data": {
+    "message": "Already has Discord Role(s): ambassador"
+  }
 }
 ```
 
 ## Role Configuration
 
-Roles and their required badges are configured in the roleAccess array:
+Roles and their required badges are configured in the roleAccess array, the role must match a role that has been created in your Discord server, e.g.
 
 ``` 
 const roleAccess = [
   {
-    role: "ambassador",
-    badgeIdRequired: "0xe6e976dd96bca7da4f1e2d2bb1ba11e2b500d85a",
+    role: "Ambassador",
+    badgeIdRequired: "0x10e9267ad0637584ab1a581d60336a1e7144fb5a",
   },
+  {
+    role: "Beta Tester",
+    badgeIdRequired: "0x2a23408f7878adc4ecc6e16422b3f8307c91409a",
+  }
 ];
 ```
 
