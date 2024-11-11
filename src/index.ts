@@ -97,13 +97,13 @@ async function main(walletAddress: `0x${string}`): Promise<{ message: string }> 
   const messageParts: string[] = [];
   
   if (rolesAdded.length > 0) {
-    messageParts.push(`Added: ${rolesAdded.join(", ")}`);
+    messageParts.push(`Added Discord Role(s): ${rolesAdded.join(", ")}`);
   }
   if (rolesAlreadyHad.length > 0) {
-    messageParts.push(`Already has: ${rolesAlreadyHad.join(", ")}`);
+    messageParts.push(`Already has Discord Role(s): ${rolesAlreadyHad.join(", ")}`);
   }
   if (rolesNotEligible.length > 0) {
-    messageParts.push(`Not eligible for: ${rolesNotEligible.join(", ")}`);
+    messageParts.push(`Not eligible for Discord Role(s): ${rolesNotEligible.join(", ")}`);
   }
 
   return { 
