@@ -1,11 +1,11 @@
 # Discord Role Bot
 
-A TypeScript-based Discord bot that automatically assigns roles to users based on their NFT badge ownership. The bot integrates with Privy for wallet-Discord account linking and OpenFormat for NFT badge verification.
+A TypeScript-based Discord bot that automatically assigns roles to users based on their NFT badge ownership. The bot integrates with Privy for wallet-Discord account linking and OpenFormat for NFT badge verification. Currently supports Aurora Mainnet.
     
 ## Features
 
-- Verifies NFT badge ownership through OpenFormat subgraph queries
-- Links wallet addresses to Discord accounts using Privy
+- Verifies NFT badge ownership through OpenFormat's subgraph
+- Checks if a Discord account is linked to the wallet addresses using Privy and returns the Discord username
 - Automatically assigns Discord roles based on badge ownership
 - RESTful API endpoint for role verification and assignment
 - Comprehensive error handling and status reporting
@@ -30,7 +30,7 @@ PRIVY_APP_ID=your_privy_app_id
 PRIVY_APP_SECRET=your_privy_secret
 DISCORD_BOT_TOKEN=your_discord_bot_token
 GUILD_ID=your_discord_server_id
-OPENFORMAT_SUBGRAPH_URL=https://api.studio.thegraph.com/query/82634/open-format-aurora/version/latest //For Aurora Mainnet
+OPENFORMAT_SUBGRAPH_URL=https://api.studio.thegraph.com/query/82634/open-format-aurora/version/latest
 
 ```
 Install dependencies:
