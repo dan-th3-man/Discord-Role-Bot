@@ -71,7 +71,7 @@ discordClient.login(process.env.DISCORD_BOT_TOKEN as string);
 const app = express();
 app.use(express.json());
 
-app.post("/VerifyAndRewardDiscordRole", async (req: Request, res: Response): Promise<void> => {
+app.post("/roles/verify", async (req: Request, res: Response): Promise<void> => {
   try {
     const { walletAddress } = req.body;
 
@@ -81,7 +81,56 @@ app.post("/VerifyAndRewardDiscordRole", async (req: Request, res: Response): Pro
       return;
     }
 
-    const result = await main(walletAddress as `0x${string}`);
+    const discordUser = await getDiscordUser(walletAddress);
+
+    if (!discordUser) {
+      res.status(404).json({ message: "No Discord account linked to this wallet" });
+      return;
+    }
+  
+    let rolesAdded: string[] = [];
+    let rolesAlreadyAssigned: string[] = [];
+    let rolesNotEligible: string[] = [];
+  
+    for (const { role, badgeIdRequired } of roleAccess) {
+      // Check if role exists in guild first
+      const roleExists = await checkRoleExists(role);
+      if (!roleExists) {
+        res.status(500).json({ message: `Configuration error: Role "${role}" does not exist in the Discord server` });
+        return;
+      }
+
+      const hasRole = await checkUserRole(discordUser, role);
+      if (hasRole) {
+        rolesAlreadyAssigned.push(role);
+      } else {
+        const hasBadge = await checkUserBadge(walletAddress, badgeIdRequired);
+        if (hasBadge) {
+          await assignRoleToUser(discordUser, role);
+          rolesAdded.push(role);
+        } else {
+          rolesNotEligible.push(role);
+        }
+      }
+    }
+  
+    // Build response message
+    const messageParts: string[] = [];
+    
+    if (rolesAdded.length > 0) {
+      messageParts.push(`Added Discord Role(s): ${rolesAdded.join(", ")}`);
+    }
+    if (rolesAlreadyAssigned.length > 0) {
+      messageParts.push(`Already has Discord Role(s): ${rolesAlreadyAssigned.join(", ")}`);
+    }
+    if (rolesNotEligible.length > 0) {
+      messageParts.push(`Not eligible for Discord Role(s): ${rolesNotEligible.join(", ")}`);
+    }
+  
+    const result = {
+      message: messageParts.length > 0 ? messageParts.join(". ") : "No role changes needed",
+    };
+
     res.status(200).json({ message: result.message });
   } catch (error) {
     console.error("Error processing request:", error);
@@ -93,53 +142,6 @@ app.listen(process.env.PORT || 3000, () => {
   console.log(`Server is running on port ${process.env.PORT || 3000}`);
 });
 
-
-// MAIN FUNCTION
-async function main(walletAddress: `0x${string}`): Promise<{ message: string }> {
-  const discordUser = await getDiscordUser(walletAddress);
-
-  if (!discordUser) {
-    return { 
-      message: "No Discord account linked to this wallet", 
-    };
-  }
-
-  let rolesAdded: string[] = [];
-  let rolesAlreadyHad: string[] = [];
-  let rolesNotEligible: string[] = [];
-
-  for (const { role, badgeIdRequired } of roleAccess) {
-    const hasRole = await checkUserRole(discordUser, role);
-    if (hasRole) {
-      rolesAlreadyHad.push(role);
-    } else {
-      const hasBadge = await checkUserBadge(walletAddress, badgeIdRequired);
-      if (hasBadge) {
-        await assignRoleToUser(discordUser, role);
-        rolesAdded.push(role);
-      } else {
-        rolesNotEligible.push(role);
-      }
-    }
-  }
-
-  // Build response message
-  const messageParts: string[] = [];
-  
-  if (rolesAdded.length > 0) {
-    messageParts.push(`Added Discord Role(s): ${rolesAdded.join(", ")}`);
-  }
-  if (rolesAlreadyHad.length > 0) {
-    messageParts.push(`Already has Discord Role(s): ${rolesAlreadyHad.join(", ")}`);
-  }
-  if (rolesNotEligible.length > 0) {
-    messageParts.push(`Not eligible for Discord Role(s): ${rolesNotEligible.join(", ")}`);
-  }
-
-  return { 
-    message: messageParts.length > 0 ? messageParts.join(". ") : "No role changes needed",
-  };
-}
 
 
 // GET DISCORD USERNAME FROM WALLET ADDRESS USING PRIVY
@@ -245,7 +247,7 @@ async function checkUserBadge(
 }
 
 // ASSIGN A ROLE TO A USER
-async function assignRoleToUser(discordUser: string, roleName: string): Promise<void> {
+async function assignRoleToUser(discordUser: string, roleName: string): Promise<boolean> {
     try {
       const guildId = process.env["GUILD_ID"];
       if (!guildId) {
@@ -257,18 +259,47 @@ async function assignRoleToUser(discordUser: string, roleName: string): Promise<
 
       // Fetch the role by name
       const role = guild.roles.cache.find((r) => r.name === roleName);
-      if (!role) throw new Error(`Role "${roleName}" not found in the guild`);
+      if (!role) {
+        console.error(`Role "${roleName}" not found in the guild`);
+        return false;
+      }
 
       const usernameWithoutDiscriminator = discordUser.split("#")[0];
       await guild.members.fetch();
-      const member = guild.members.cache.find((m) => m.user.username === usernameWithoutDiscriminator);
+      const member = guild.members.cache.find(
+        (m) => m.user.username === usernameWithoutDiscriminator
+      );
 
-      if (!member) throw new Error("User not found in the guild");
+      if (!member) {
+        console.error(`User "${discordUser}" not found in the guild`);
+        return false;
+      }
 
       // Add the role to the user
       await member.roles.add(role);
       console.log(`Role "${roleName}" assigned to user ${discordUser}`);
+      return true;
     } catch (error) {
       console.error(`Failed to assign role "${roleName}" to user ${discordUser}:`, error);
+      return false;
+    }
+}
+
+// Add new helper function to check if role exists
+async function checkRoleExists(roleName: string): Promise<boolean> {
+  try {
+    const guildId = process.env["GUILD_ID"];
+    if (!guildId) {
+      throw new Error("GUILD_ID environment variable is not set");
+    }
+
+    const guild = await discordClient.guilds.fetch(guildId);
+    if (!guild) throw new Error("Guild not found");
+
+    const role = guild.roles.cache.find((r) => r.name === roleName);
+    return !!role;
+  } catch (error) {
+    console.error(`Error checking if role "${roleName}" exists:`, error);
+    return false;
   }
 }
