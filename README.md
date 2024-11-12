@@ -12,7 +12,7 @@ A TypeScript-based Discord bot that automatically assigns roles to users based o
 
 ## How It Works
 
-Users submit their wallet address to the /VerifyAndRewardDiscordRole endpoint
+Users submit their wallet address to the /roles/verify endpoint
 
 The bot:
 
@@ -47,7 +47,7 @@ npm start
 
 ## API Usage
 
-Send a POST request to /VerifyAndRewardDiscordRole:
+Send a POST request to /roles/verify:
 
 ```
 {
