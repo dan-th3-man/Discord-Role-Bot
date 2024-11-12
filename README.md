@@ -1,10 +1,10 @@
-# Discord Role Bot
+# Discord Token-Gated Roles
+## A Discord bot that automatically assigns roles to users based on their NFT ownership. 
 
-A TypeScript-based Discord bot that automatically assigns roles to users based on their NFT badge ownership. The bot integrates with Privy for wallet-Discord account linking and OpenFormat for NFT badge verification. Currently supports Aurora Mainnet.
     
 ## Features
 
-- Verifies NFT badge ownership through OpenFormat's subgraph
+- 🔑 Verifies the NFT's a user has been awarded via OpenFormat using OpenFormat's subgraph
 - Checks if a Discord account is linked to the wallet addresses using Privy and returns the Discord username
 - Automatically assigns Discord roles based on badge ownership
 - RESTful API endpoint for role verification and assignment
@@ -21,33 +21,53 @@ The bot:
 - Verifies NFT badge ownership through OpenFormat
 - Assigns appropriate Discord roles if eligible
 
-## Setup
+## Getting Started
 
-Create a .env file with the following variables:
+### Prerequisites
+Before you begin, you'll need to set up accounts and configure a few services:
+
+1. **Discord Application**
+
+
+
+2. **Privy Dashboard**
+   - Create an account at [Privy Dashboard](https://dashboard.privy.io)
+   - Create a new app to get your `PRIVY_APP_ID` and `PRIVY_APP_SECRET` from the Settings section of your Privy app
+   - In the Login Methods section of your Privy app, enable:
+     - Discord
+     - Email
+
+### Local Development
+
+1. Clone the repository:
+
+```
+git clone https://github.com/openformat/discord-bot.git
+cd discord-bot
+```
+
+2. Install dependencies:
+
+```
+npm install
+```
+
+3. Create a `.env.local` file in the root directory with the following variables:
 
 ```
 PRIVY_APP_ID=your_privy_app_id
 PRIVY_APP_SECRET=your_privy_secret
 DISCORD_BOT_TOKEN=your_discord_bot_token
 GUILD_ID=your_discord_server_id
-OPENFORMAT_SUBGRAPH_URL=https://api.studio.thegraph.com/query/82634/open-format-aurora/version/latest
-
-```
-Install dependencies:
-
-```
-npm install
 ```
 
-Start the server:
+4. Start the server:
 
 ```
-npm start
+npm run dev
 ```
 
-## API Usage
-
-Send a POST request to /roles/verify:
+5. Test the bot by sending a POST request to /roles/verify
 
 ```
 {
@@ -91,24 +111,15 @@ const roleAccess = [
   }
 ];
 ```
+## Environment Variables
+| Variable                   | Required | Example                                      | Description                                                                                                                                          |
+| -------------------------- | -------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PRIVY_APP_ID` | Yes      | `cgg24287yq0273ryeh719gutpc`                 | Your [Privy](https://privy.io) application ID.                                                                                                        |
+| `PRIVY_APP_SECRET`       | Yes       | `b31e8e6c-d43b-4b37-aee9-621egg415b8e`       | Your [Privy](https://privy.io) application secret. |
+| `GUILD_ID`       | Yes       | `994570291395174421` | Required to view and assign roles in your Discord server. You can find this in your Discord server settings or URL.       |
+| `DISCORD_BOT_TOKEN`       | Yes       | `MTA1NzY5NDQ5MDk5NzM5MTM4MA.GqFoTp.4vIwE` | Your Discord Bot Token. Create one in the [Discord Developer Portal](https://discord.com/developers/applications).      |
 
-## Technical Details
 
-- Built with TypeScript and Express
-- Uses Discord.js for Discord integration
-- Integrates with Privy for wallet-Discord account linking
-- Uses GraphQL for OpenFormat badge verification
-- ESM module system
-- Runs on Node.js
 
-### Error Handling
-
-The bot includes comprehensive error handling for:
-
-- Invalid wallet addresses
-- Missing Discord account links
-- Badge verification failures
-- Role assignment issues
-- Server errors
-
-Each error case returns appropriate HTTP status codes and descriptive messages.
+## Contributing
+Contributions are welcome! Please feel free to submit an issue.

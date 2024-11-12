@@ -30,6 +30,8 @@ const roleAccess = [
   },
 ];
 
+const subgraphUrl = "https://api.studio.thegraph.com/query/82634/open-format-aurora/version/latest";
+
 // Client Setup
 // Set up Privy client
 if (!process.env.PRIVY_APP_ID || !process.env.PRIVY_APP_SECRET) {
@@ -203,7 +205,7 @@ async function checkUserBadge(
   badgeId: string,
 ): Promise<boolean> {
 
-  if (!process.env.OPENFORMAT_SUBGRAPH_URL) {
+  if (!subgraphUrl) {
     return false;
   }
 
@@ -223,7 +225,7 @@ async function checkUserBadge(
 
   try {
     const response = await request<BadgeResponse>(
-      process.env.OPENFORMAT_SUBGRAPH_URL,
+      subgraphUrl,
       checkBadges,
       {
         walletAddress: walletAddress.toLowerCase(),
