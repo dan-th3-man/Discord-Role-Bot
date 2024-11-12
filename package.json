@@ -13,13 +13,9 @@
   "license": "ISC",
   "dependencies": {
     "@privy-io/server-auth": "1.16.1",
-    "axios": "1.7.7",
-    "body-parser": "1.20.3",
     "discord.js": "14.16.3",
     "dotenv": "16.3.1",
     "express": "4.21.1",
-    "node-fetch": "3.3.1",
-    "redaxios": "0.5.1",
     "viem": "2.21.44"
   },
   "devDependencies": {

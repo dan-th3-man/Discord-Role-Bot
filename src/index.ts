@@ -1,13 +1,28 @@
+// Import dependencies
 import dotenv from 'dotenv';
-dotenv.config();
 import express, { Request, Response } from "express";
 import { Client, GatewayIntentBits } from "discord.js";
 import { PrivyClient } from "@privy-io/server-auth";
 import type { Address } from "viem";
 import { gql, request } from "graphql-request";
 
+dotenv.config();
 
-// Role Data - Currently just ambassador badge
+
+// Interfaces
+interface BadgeResponse {
+  users: {
+    collectedBadges: {
+      badge: {
+        id: string;
+        name: string;
+      };
+    }[];
+  }[];
+}
+
+
+// Constants
 const roleAccess = [
   {
     role: "ambassador",
@@ -15,6 +30,7 @@ const roleAccess = [
   },
 ];
 
+// Client Setup
 // Set up Privy client
 if (!process.env.PRIVY_APP_ID || !process.env.PRIVY_APP_SECRET) {
   throw new Error("Missing Privy environment variables");
@@ -31,13 +47,27 @@ const discordClient = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 });
 
+// Add event listeners for Discord client
 discordClient.once("ready", () => {
   console.log(`Logged in as ${discordClient.user?.tag}!`);
 });
 
+discordClient.on('error', (error) => {
+  console.error('Discord client error:', error);
+});
+
+discordClient.on('disconnect', () => {
+  console.warn('Discord client disconnected');
+});
+
+discordClient.on('reconnecting', () => {
+  console.log('Discord client reconnecting...');
+});
+
 discordClient.login(process.env.DISCORD_BOT_TOKEN as string);
 
-// Set up API endpoint
+
+// API Setup
 const app = express();
 app.use(express.json());
 
@@ -83,7 +113,7 @@ async function main(walletAddress: `0x${string}`): Promise<{ message: string }> 
     if (hasRole) {
       rolesAlreadyHad.push(role);
     } else {
-      const hasBadge = await checkUserBadgeBool(walletAddress, badgeIdRequired);
+      const hasBadge = await checkUserBadge(walletAddress, badgeIdRequired);
       if (hasBadge) {
         await assignRoleToUser(discordUser, role);
         rolesAdded.push(role);
@@ -166,7 +196,7 @@ async function checkUserRole(
 
 
 // CHECK WHETHER USER HAS BADGE
-async function checkUserBadgeBool(
+async function checkUserBadge(
   walletAddress: string,
   badgeId: string,
 ): Promise<boolean> {
@@ -197,7 +227,6 @@ async function checkUserBadgeBool(
         walletAddress: walletAddress.toLowerCase(),
       }
     );
-  console.log(response);
     
     if (!response.users || response.users.length === 0) {
       console.log(`No user found for wallet address: ${walletAddress}`);
@@ -241,16 +270,5 @@ async function assignRoleToUser(discordUser: string, roleName: string): Promise<
       console.log(`Role "${roleName}" assigned to user ${discordUser}`);
     } catch (error) {
       console.error(`Failed to assign role "${roleName}" to user ${discordUser}:`, error);
-    }
   }
-
-interface BadgeResponse {
-  users: {
-    collectedBadges: {
-      badge: {
-        id: string;
-        name: string;
-      };
-    }[];
-  }[];
 }
