@@ -25,12 +25,10 @@ interface BadgeResponse {
 // Constants
 const roleAccess = [
   {
-    role: "ambassador",
+    role: "Ambassador",
     badgeIdRequired: "0xe6e976dd96bca7da4f1e2d2bb1ba11e2b500d85a",
   },
 ];
-
-const subgraphUrl = "https://api.studio.thegraph.com/query/82634/open-format-aurora/version/latest";
 
 // Client Setup
 // Set up Privy client
@@ -205,7 +203,7 @@ async function checkUserBadge(
   badgeId: string,
 ): Promise<boolean> {
 
-  if (!subgraphUrl) {
+  if (!process.env.OPENFORMAT_SUBGRAPH_URL) {
     return false;
   }
 
@@ -225,7 +223,7 @@ async function checkUserBadge(
 
   try {
     const response = await request<BadgeResponse>(
-      subgraphUrl,
+      process.env.OPENFORMAT_SUBGRAPH_URL,
       checkBadges,
       {
         walletAddress: walletAddress.toLowerCase(),

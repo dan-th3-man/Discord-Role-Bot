@@ -1,5 +1,5 @@
 # Discord Token-Gated Roles
-## A Discord bot that automatically assigns roles to users based on their NFT ownership. 
+A Discord bot that automatically assigns roles to users based on their NFT ownership. 
 
     
 ## Features
