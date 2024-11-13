@@ -2,6 +2,15 @@
 A Discord bot that automatically assigns roles to users based on their NFT ownership. 
 
 
+## Table of Contents
+- [How It Works](#how-it-works)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Local Development](#local-development)
+- [Environment Variables](#environment-variables)
+- [Contributing](#contributing)
+
+
 ## How It Works
 
 A wallet address is sent to the /roles/verify endpoint as a POST request.
@@ -136,13 +145,13 @@ Response examples:
 ```
 
 ## Environment Variables
-| Variable                   | Required | Example                                      | Description                                                                                                                                          |
-| -------------------------- | -------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PRIVY_APP_ID` | Yes      | `cgg24287yq0273ryeh719gutpc`                 | Your [Privy](https://privy.io) application ID.                                                                                                        |
-| `PRIVY_APP_SECRET`       | Yes       | `b31e8e6c-d43b-4b37-aee9-621egg415b8e`       | Your [Privy](https://privy.io) application secret. |
-| `GUILD_ID`       | Yes       | `994570291395174421` | Required to view and assign roles in your Discord server. You can find this in your Discord server settings or URL.       |
-| `DISCORD_BOT_TOKEN`       | Yes       | `MTA1NzY5NDQ5MDk5NzM5MTM4MA.GqFoTp.4vIwE` | Your Discord Bot Token. Create one in the [Discord Developer Portal](https://discord.com/developers/applications).      |
-| `OPENFORMAT_SUBGRAPH_URL` | Yes      | `https://api.studio.thegraph.com/query/82634/open-format-aurora/version/latest` | The URL for the OpenFormat subgraph used to verify NFT ownership. |
+| Variable | Required | Example | Description |
+| -------- | -------- | ------- | ----------- |
+| `PRIVY_APP_ID` | Yes | `cgg24287yq0273ryeh719gutpc` | Your [Privy](https://privy.io) application ID. |
+| `PRIVY_APP_SECRET` | Yes | `b31e8e6c-d43b-4b37-aee9-621egg415b8e` | Your [Privy](https://privy.io) application secret. |
+| `GUILD_ID` | Yes | `994570291395174421` | Required to view and assign roles in your Discord server. You can find this in your Discord server settings or URL. |
+| `DISCORD_BOT_TOKEN` | Yes | `MTA1NzY5NDQ5MDk5NzM5MTM4MA.GqFoTp.4vIwE` | Your Discord Bot Token. Create one in the [Discord Developer Portal](https://discord.com/developers/applications). |
+| `OPENFORMAT_SUBGRAPH_URL` | Yes | `https://api.studio.thegraph.com/query/82634/open-format-aurora/version/latest` | The URL for the OpenFormat subgraph used to verify NFT ownership. |
 
 
 
